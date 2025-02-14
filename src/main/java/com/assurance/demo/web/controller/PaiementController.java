@@ -16,26 +16,7 @@ import java.util.Optional;
 @RequestMapping("/api/paiements")
 public class PaiementController {
 
-        @Autowired
-        private PaiementService paiementService;
-        @PostMapping("/{id}")
-        public ResponseEntity<Paiement> addPaiement(@PathVariable Long id,
-                                                    @RequestBody @Valid Paiement paiement)
-        {
-            paiementService.addPaiement(id, paiement);
-            return ResponseEntity.status(HttpStatus.CREATED).body(paiement);
-        }
-    // GET a Paiement by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<Paiement> getPaiement(@PathVariable Long id) {
-        Optional<Paiement> paiement = paiementService.getPaiementById(id);
-        // Verify Devis exists
-        if (paiement.isPresent()) {
-            return ResponseEntity.ok(paiement.get());
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
+
 //retrive all paiements
     @GetMapping
     public ResponseEntity<List<Paiement>> getAllPaiements() {

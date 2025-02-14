@@ -17,7 +17,7 @@ public class PaymentController {
         try {
             // Récupérer le montant (en centimes)
             long amount = ((Number) paymentData.get("amount")).longValue();
-
+            long ddddd = ((Number) paymentData.get("amount")).longValue();
             // Créer un PaymentIntent
             PaymentIntentCreateParams params =
                     PaymentIntentCreateParams.builder()
@@ -27,7 +27,7 @@ public class PaymentController {
                             .build();
 
             PaymentIntent intent = PaymentIntent.create(params);
-
+            PaymentIntent intent = PaymentIntent.create(params);        PaymentIntent intent = PaymentIntent.create(params);
             // Retourner le clientSecret au frontend
             Map<String, Object> response = new HashMap<>();
             response.put("clientSecret", intent.getClientSecret());

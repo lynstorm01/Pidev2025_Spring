@@ -27,16 +27,7 @@ public class DevisController {
     private DevisService devisService;
 
 
-    //Create Devis
-    @PostMapping(value = "/ajouter")
-    public ResponseEntity<DevisResponseDTO> createDevis( @Valid @RequestBody Devis devis) throws MessagingException {
-        DevisResponseDTO createdDevis = devisService.createDevis(devis);
-        return ResponseEntity.ok(createdDevis);
-    }
-    @PostMapping("/ajouter-voyage")
-    public ResponseEntity<DevisResponseDTO> createDevisVoyage(@Valid  @RequestBody DevisVoyage devisVoyage) throws MessagingException {
-        DevisResponseDTO createdDevis = devisService.createDevis(devisVoyage);
-
+  
         return ResponseEntity.ok(createdDevis);
     }
     @PostMapping("/ajouter-habitation")
