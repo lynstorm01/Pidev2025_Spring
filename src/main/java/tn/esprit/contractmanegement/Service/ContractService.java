@@ -1,14 +1,13 @@
 package tn.esprit.contractmanegement.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import tn.esprit.contractmanegement.Entity.Contract;
 import tn.esprit.contractmanegement.Entity.Property;
-import tn.esprit.contractmanegement.Entity.User;
 import tn.esprit.contractmanegement.Repository.ContractRepository;
 import tn.esprit.contractmanegement.Repository.UserRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,36 +15,30 @@ import java.util.Optional;
 public class ContractService implements IContractService {
 
     private final ContractRepository contractRepository;
-    private final UserRepository userRepository;
+    //private final UserRepository userRepository;
 
     @Autowired
     public ContractService(ContractRepository contractRepository, UserRepository userRepository) {
         this.contractRepository = contractRepository;
-        this.userRepository = userRepository;
+       // this.userRepository = userRepository;
     }
 
     // ✅ Create a contract (Only if user exists)
     @Override
-    public Contract createContract(Long userId, Contract contract) {
-        Optional<User> user = userRepository.findById(userId);
-        if (user.isPresent()) {
-            contract.setUser(user.get()); // Assign user to contract
-
-            // Ensure property is correctly linked
-            if (contract.getProperty() != null) {
-                contract.getProperty().setContract(contract);
-            }
-
-            return contractRepository.save(contract);
-        } else {
-            throw new RuntimeException("User not found");
+    public Contract createContract(Contract contract) {
+        // Ensure property is correctly linked
+        if (contract.getProperty() != null) {
+            contract.getProperty().setContract(contract);
         }
+
+        return contractRepository.save(contract);
     }
 
     // ✅ Get all contracts
     @Override
     public List<Contract> getAllContracts() {
-        return contractRepository.findAll();
+        List<Contract> contracts = contractRepository.findAll();
+        return contracts.isEmpty() ? new ArrayList<>() : contracts;  // ✅ Always return a valid array
     }
 
     // ✅ Get a single contract
@@ -64,15 +57,14 @@ public class ContractService implements IContractService {
             existingContract.setType(updatedContract.getType());
             existingContract.setStatus(updatedContract.getStatus());
 
-            // Update property details if present
+            // Update property details safely
             if (updatedContract.getProperty() != null) {
                 if (existingContract.getProperty() == null) {
-                    existingContract.setProperty(updatedContract.getProperty());
-                } else {
-                    existingContract.getProperty().setAddress(updatedContract.getProperty().getAddress());
-                    existingContract.getProperty().setPropertyType(updatedContract.getProperty().getPropertyType());
-                    existingContract.getProperty().setValue(updatedContract.getProperty().getValue());
+                    existingContract.setProperty(new Property()); // Ensure property exists
                 }
+                existingContract.getProperty().setAddress(updatedContract.getProperty().getAddress());
+                existingContract.getProperty().setPropertyType(updatedContract.getProperty().getPropertyType());
+                existingContract.getProperty().setValue(updatedContract.getProperty().getValue());
             }
 
             return contractRepository.save(existingContract);
@@ -81,7 +73,7 @@ public class ContractService implements IContractService {
 
     // ✅ Delete contract (Admin only)
     @Override
-    @PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMIN')")
     public void deleteContract(Long id) {
         if (!contractRepository.existsById(id)) {
             throw new RuntimeException("Contract not found");

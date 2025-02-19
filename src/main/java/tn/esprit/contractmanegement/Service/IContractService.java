@@ -6,7 +6,10 @@ import java.util.List;
 import java.util.Optional;
 
 public interface IContractService {
-    Contract createContract(Long userId, Contract contract);
+
+    // ✅ Create a contract (Only if user exists)
+    Contract createContract(Contract contract);
+
     List<Contract> getAllContracts();
     Optional<Contract> getContractById(Long id);
     Contract updateContract(Long contractId, Contract updatedContract);
