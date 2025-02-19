@@ -55,7 +55,7 @@ public class ContractController {
         if (existingContract.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-        Contract contract = contractService.updateContract(contractId, updatedContract);/
+        Contract contract = contractService.updateContract(contractId, updatedContract);
         return ResponseEntity.ok(contract);
     }
 
