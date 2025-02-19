@@ -1,5 +1,7 @@
 package tn.esprit.contractmanegement.Entity;
-
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -11,6 +13,7 @@ import lombok.Setter;
 import java.util.Date;
 
 @Entity
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 @Getter
 @Setter
 public class Contract {
@@ -47,8 +50,7 @@ public class Contract {
     @JoinColumn(name = "property_id", referencedColumnName = "id")
     private Property property;
 
-    // Assuming you have a relationship with User:
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+//    @ManyToOne
+//    @JoinColumn(name = "user_id",nullable = true)
+//    private User user;
 }

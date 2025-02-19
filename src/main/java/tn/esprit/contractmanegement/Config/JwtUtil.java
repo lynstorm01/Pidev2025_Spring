@@ -20,16 +20,19 @@ public class JwtUtil {
         this.userService = userService;
     }
 
+    // ✅ Generate JWT with userId, username, and role
     public String generateToken(User user) {
         return Jwts.builder()
-                .setSubject(user.getUsername())
-                .claim("role", user.getRole().name())  // Store role in JWT
+                .setSubject(user.getUsername())  // Username as subject
+                .claim("userId", user.getId())   // ✅ Added userId
+                .claim("role", user.getRole().name())  // ✅ Store role in JWT
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) // 1-hour expiry
                 .signWith(key)
                 .compact();
     }
 
+    // ✅ Extract username (sub) from JWT
     public String extractUsername(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
@@ -39,6 +42,17 @@ public class JwtUtil {
                 .getSubject();
     }
 
+    // ✅ Extract userId from JWT
+    public Long extractUserId(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("userId", Long.class);
+    }
+
+    // ✅ Extract role from JWT
     public String extractRole(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
@@ -48,12 +62,17 @@ public class JwtUtil {
                 .get("role", String.class);
     }
 
+    // ✅ Validate token: Check username exists & token is not expired
     public boolean validateToken(String token) {
         String username = extractUsername(token);
+        Long userId = extractUserId(token);  // Ensure userId exists
+
         Optional<User> user = userService.getUsername(username);
-        return user.isPresent() && !isTokenExpired(token);
+
+        return user.isPresent() && user.get().getId().equals(userId) && !isTokenExpired(token);
     }
 
+    // ✅ Check if token is expired
     private boolean isTokenExpired(String token) {
         Date expiration = Jwts.parserBuilder()
                 .setSigningKey(key)

@@ -2,7 +2,6 @@ package tn.esprit.contractmanegement.Controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.contractmanegement.Entity.Contract;
 import tn.esprit.contractmanegement.Service.ContractService;
@@ -21,31 +20,27 @@ public class ContractController {
         this.contractService = contractService;
     }
 
-    // ✅ Create a contract (Allowed for Admin & User)
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    @PostMapping("/{userId}")
-    public ResponseEntity<Contract> createContract(@PathVariable Long userId, @Valid @RequestBody Contract contract) {
+    // ✅ Create a contract
+    @PostMapping
+    public ResponseEntity<Contract> createContract(@Valid @RequestBody Contract contract) {
         try {
-            Contract createdContract = contractService.createContract(userId, contract);
+            Contract createdContract = contractService.createContract(contract);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdContract);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // ✅ Get all contracts (ADMIN only)
-    @PreAuthorize("hasRole('ADMIN')")
+    // ✅ Get all contracts
     @GetMapping
     public ResponseEntity<List<Contract>> getAllContracts() {
         List<Contract> contracts = contractService.getAllContracts();
-        if (contracts.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-        }
-        return ResponseEntity.ok(contracts);
+        return contracts.isEmpty()
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.ok(contracts);
     }
 
-    // ✅ Get contract by ID (Admin & User)
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    // ✅ Get contract by ID
     @GetMapping("/{id}")
     public ResponseEntity<Contract> getContractById(@PathVariable Long id) {
         Optional<Contract> contractOptional = contractService.getContractById(id);
@@ -53,8 +48,7 @@ public class ContractController {
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
-    // ✅ Update contract (Admin & User)
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")//("hasAnyRole('ADMIN', 'USER')")
+    // ✅ Update contract
     @PutMapping("/{contractId}")
     public ResponseEntity<Contract> updateContract(@PathVariable Long contractId, @Valid @RequestBody Contract updatedContract) {
         Optional<Contract> existingContract = contractService.getContractById(contractId);
@@ -65,15 +59,13 @@ public class ContractController {
         return ResponseEntity.ok(contract);
     }
 
-    // ✅ Delete contract (Admin only)
-    @PreAuthorize("hasRole('ADMIN')")
+    // ✅ Delete contract (FIXED ERROR)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteContract(@PathVariable Long id) {
-        Optional<Contract> contractOptional = contractService.getContractById(id);
-        if (contractOptional.isEmpty()) {
+        if (contractService.getContractById(id).isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
         contractService.deleteContract(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.noContent().build(); // ✅ Ensures correct return type
     }
 }

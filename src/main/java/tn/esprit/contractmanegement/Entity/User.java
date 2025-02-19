@@ -1,5 +1,8 @@
 package tn.esprit.contractmanegement.Entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -14,6 +17,8 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
+
 public class User implements UserDetails {
 
     @Id
@@ -37,8 +42,8 @@ public class User implements UserDetails {
         USER, ADMIN
     }
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Contract> contracts; // A user can have multiple contracts
+//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+//    private List<Contract> contracts; // A user can have multiple contracts
 
     // Implement methods from UserDetails for Spring Security
     @Override
