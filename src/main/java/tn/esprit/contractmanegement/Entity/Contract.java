@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
@@ -31,8 +32,10 @@ public class Contract {
 
     @NotNull(message = "Start date is required")
     @Temporal(TemporalType.DATE)
+    @FutureOrPresent
     private Date startDate;
 
+    @FutureOrPresent
     @NotNull(message = "End date is required")
     @Temporal(TemporalType.DATE)
     private Date endDate;
@@ -49,6 +52,11 @@ public class Contract {
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "property_id", referencedColumnName = "id")
     private Property property;
+
+    @Lob
+    @Column(name = "signature", columnDefinition = "LONGBLOB")
+    private byte[] signature;
+    private boolean signed;
 
 //    @ManyToOne
 //    @JoinColumn(name = "user_id",nullable = true)

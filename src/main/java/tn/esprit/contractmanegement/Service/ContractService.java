@@ -80,4 +80,17 @@ public class ContractService implements IContractService {
         }
         contractRepository.deleteById(id);
     }
+
+    public Contract SignContract(Long contractId, byte[] signature) {
+        Contract contract = contractRepository.findById(contractId)
+                .orElseThrow(() -> new RuntimeException("Contrat non trouvé"));
+
+        if (contract.isSigned()) {
+            throw new RuntimeException("Le contrat est déjà signé et ne peut plus être modifié.");
+        }
+
+        contract.setSignature(signature);
+        contract.setSigned(true);
+        return contractRepository.save(contract);
+    }
 }

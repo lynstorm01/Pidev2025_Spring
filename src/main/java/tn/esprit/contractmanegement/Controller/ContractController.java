@@ -3,10 +3,13 @@ package tn.esprit.contractmanegement.Controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import tn.esprit.contractmanegement.Entity.Contract;
 import tn.esprit.contractmanegement.Service.ContractService;
 
 import jakarta.validation.Valid;
+
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -67,5 +70,18 @@ public class ContractController {
         }
         contractService.deleteContract(id);
         return ResponseEntity.noContent().build(); // ✅ Ensures correct return type
+    }
+
+
+    @PutMapping("/{id}/signer")
+    public ResponseEntity<Contract> signerContract(@PathVariable Long id,
+                                                   @RequestParam("signature") MultipartFile signatureFile) {
+        try {
+            byte[] signatureBytes = signatureFile.getBytes();
+            Contract signedContract = contractService.SignContract(id, signatureBytes);
+            return ResponseEntity.ok(signedContract);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

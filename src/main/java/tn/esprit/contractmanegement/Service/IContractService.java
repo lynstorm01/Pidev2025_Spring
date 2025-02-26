@@ -14,4 +14,5 @@ public interface IContractService {
     Optional<Contract> getContractById(Long id);
     Contract updateContract(Long contractId, Contract updatedContract);
     void deleteContract(Long id);
+     Contract SignContract(Long contractId, byte[] signature);
 }
