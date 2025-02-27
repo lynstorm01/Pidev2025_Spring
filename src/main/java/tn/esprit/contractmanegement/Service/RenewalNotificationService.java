@@ -1,6 +1,8 @@
 package tn.esprit.contractmanegement.Service;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -21,26 +23,26 @@ public class RenewalNotificationService {
         this.userService = userService;
     }
 
-    // Runs daily at 1 AM (adjust the cron expression as needed)
-    @Scheduled(cron = "0 0 1 * * ?")
+    @Scheduled(cron = "0 0 7 * * ?") // runs every day at 7 AM, for example
     public void sendRenewalReminders() {
-        LocalDate today = LocalDate.now();
-        LocalDate fiveDaysFromNow = today.plusDays(5);
+        LocalDate fiveDaysFromNow = LocalDate.now().plusDays(5);
+        Date endDate = Date.from(fiveDaysFromNow.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
-        // Find contracts ending between today and 5 days from now
-        List<Contract> expiringContracts = contractRepository.findByEndDateBetween(today, fiveDaysFromNow);
-
-        for (Contract contract : expiringContracts) {
-            String clientEmail = "yessine.blanco@esprit.tn"; // Ensure this getter exists
+        // Query contracts that end exactly on `fiveDaysFromNow`
+        List<Contract> expiringInFiveDays = contractRepository.findByEndDate(endDate);
+        for (Contract contract : expiringInFiveDays) {
+            // The client’s email - adapt to your actual data
+            String clientEmail = "yessine.blanco@esprit.tn";
             String contractNumber = contract.getContractNumber();
 
             String subject = "Contract Renewal Reminder";
             String emailBody = "Dear Client, your contract " + contractNumber +
-                    " is set to expire in 5 days. Please renew your contract.";
+                    " will expire in exactly 5 days. Please renew soon!";
 
             if (clientEmail != null && !clientEmail.isEmpty()) {
                 emailService.sendEmail(clientEmail, subject, emailBody);
             }
         }
     }
+
 }

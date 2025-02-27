@@ -20,7 +20,7 @@ import java.util.Date;
 public class Contract {
 
     public enum ContractStatus {
-        ACTIVE, EXPIRED, CANCELED, PENDING
+        ACTIVE, EXPIRED, CANCELED, PENDING,ARCHIVED
     }
 
     @Id
