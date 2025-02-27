@@ -1,6 +1,5 @@
-package tn.esprit.contractmanegement.Entity;
+package tn.esprit.blogmanagement.Entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
@@ -18,8 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-
-public class User implements UserDetails {
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,21 +29,26 @@ public class User implements UserDetails {
     private String firstName;
     private String lastName;
     private String password;
-    private Date dateOfRegistration;
+    private Date dateOfRegistration = new Date();
     private String email;
     private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
-    private Role role;  // Enum for better security
+    private Role role;  // Enum for user roles
 
     public enum Role {
         USER, ADMIN
     }
 
-//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-//    private List<Contract> contracts; // A user can have multiple contracts
+    // One user can have multiple posts
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Post> posts;
 
-    // Implement methods from UserDetails for Spring Security
+    // One user can have multiple comments
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Comment> comments;
+
+    /*// Implement methods from UserDetails for Spring Security
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(() -> "ROLE_" + role.name());
@@ -53,23 +56,24 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonExpired() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean isEnabled() {
-        return false;
+        return true;
     }
+
     @Override
     public String getPassword() {
         return password;
@@ -78,7 +82,5 @@ public class User implements UserDetails {
     @Override
     public String getUsername() {
         return username;
-    }
-
-
+    }*/
 }

@@ -1,8 +1,8 @@
-package tn.esprit.contractmanegement.Service;
+package tn.esprit.blogmanagement.Service;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import tn.esprit.contractmanegement.Entity.User;
+import tn.esprit.blogmanagement.Entity.User;
 
 import java.util.List;
 import java.util.Optional;

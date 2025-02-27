@@ -1,4 +1,4 @@
-package tn.esprit.contractmanegement.Config;
+package tn.esprit.blogmanagement.Config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,3 +17,4 @@ public class WebConfig implements WebMvcConfigurer {
 //                .allowCredentials(true);
 //    }
 }
+

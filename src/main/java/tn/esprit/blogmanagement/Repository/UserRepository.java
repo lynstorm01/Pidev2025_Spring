@@ -1,7 +1,7 @@
-package tn.esprit.contractmanegement.Repository;
+package tn.esprit.blogmanagement.Repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import tn.esprit.contractmanegement.Entity.User;
+import tn.esprit.blogmanagement.Entity.User;
 
 import java.util.Optional;
 

@@ -1,4 +1,4 @@
-package tn.esprit.contractmanegement;
+package tn.esprit.blogmanagement;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -6,10 +6,10 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 @EnableDiscoveryClient
 @SpringBootApplication
-public class ContractManegementApplication {
+public class BlogManegementApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(ContractManegementApplication.class, args);
+        SpringApplication.run(BlogManegementApplication.class, args);
     }
 
 }

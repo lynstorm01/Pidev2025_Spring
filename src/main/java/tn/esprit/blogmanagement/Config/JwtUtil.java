@@ -1,10 +1,10 @@
-package tn.esprit.contractmanegement.Config;
+package tn.esprit.blogmanagement.Config;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
-import tn.esprit.contractmanegement.Service.UserService;
-import tn.esprit.contractmanegement.Entity.User;
+import tn.esprit.blogmanagement.Service.UserService;
+import tn.esprit.blogmanagement.Entity.User;
 
 import java.security.Key;
 import java.util.Date;
@@ -83,3 +83,4 @@ public class JwtUtil {
         return expiration.before(new Date());
     }
 }
+
