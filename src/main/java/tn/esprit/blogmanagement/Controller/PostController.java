@@ -7,14 +7,15 @@ import tn.esprit.blogmanagement.DTO.PostDTO;
 import tn.esprit.blogmanagement.DTO.PostRequest;
 import tn.esprit.blogmanagement.Entity.Post;
 import jakarta.validation.Valid;
+import tn.esprit.blogmanagement.Entity.Status;
 import tn.esprit.blogmanagement.Entity.User;
+import tn.esprit.blogmanagement.Repository.PostRepository;
 import tn.esprit.blogmanagement.Service.PostService;
 import tn.esprit.blogmanagement.Service.UserService;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/Blog")
@@ -22,10 +23,12 @@ public class PostController {
 
     private final PostService postService;
     private final UserService userService;
+    private final PostRepository postRepository;
 
-    public PostController(PostService postService, UserService userService) {
+    public PostController(PostService postService, UserService userService, PostRepository postRepository) {
         this.postService = postService;
         this.userService = userService;
+        this.postRepository = postRepository;
     }
 
     // ✅ Create a new post
@@ -50,6 +53,7 @@ public class PostController {
             post.setCategory(postRequest.getCategory());
             post.setUser(user); // Set the user by userId
             post.setComments(List.of()); // Ensure comments are set as an empty list if none provided
+            post.setStatus(Status.PENDING);
 
             // Save the post using the service
             Post createdPost = postService.registerPost(post);
@@ -75,6 +79,10 @@ public class PostController {
                             post.getLastUpdatedAt(),
                             post.getCategory(),
                             post.getUser().getId(),  // Only return userId
+                            post.getNumberOfLikes(),
+                            post.getNumberOfDislikes(),
+                            post.getStatus(),
+                            post.getUser().getUsername(),
                             post.getComments().stream().map(comment ->
                                     comment.getId()  // Only return comment ID
                             ).toList(),
@@ -120,6 +128,10 @@ public class PostController {
                     post.getLastUpdatedAt(),
                     post.getCategory(),
                     post.getUser().getId(),  // Only return userId
+                    post.getNumberOfLikes(),
+                    post.getNumberOfDislikes(),
+                    post.getStatus(),
+                    post.getUser().getUsername(),
                     post.getComments().stream().map(comment ->
                             comment.getId()  // Only return comment ID
                     ).toList(),
@@ -140,26 +152,45 @@ public class PostController {
 
 
 
-    // ✅ Update post
     @PutMapping("/{postId}")
-    public ResponseEntity<?> updatePost(@PathVariable Long postId, @Valid @RequestBody Post updatedPost) {
+    public ResponseEntity<?> updatePost(@PathVariable Long postId, @Valid @RequestBody PostRequest updatedPostDTO) {
         try {
+            // Fetch the existing post
             Optional<Post> existingPost = postService.getPostById(postId);
             if (existingPost.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body("Post with ID " + postId + " not found.");
             }
 
-            // Set the updatedAt field to current time
-            updatedPost.setLastUpdatedAt(new Date());  // Ensure the updatedAt is set before the update
+            // Fetch the User by userId from the PostDTO
+            Optional<User> user = userService.getUserById(updatedPostDTO.getUserId());  // Assuming userService.getUserById is available
+            if (user.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("User with ID " + updatedPostDTO.getUserId() + " not found.");
+            }
 
+            // Map the PostDTO to Post entity
+            Post updatedPost = new Post();
+            updatedPost.setId(postId); // Retain the existing post ID
+            updatedPost.setUser(user.get()); // Set the user ID from DTO
+            updatedPost.setTitle(updatedPostDTO.getTitle()); // Set title from DTO
+            updatedPost.setContent(updatedPostDTO.getContent()); // Set content from DTO
+            updatedPost.setCategory(updatedPostDTO.getCategory()); // Set category from DTO
+            updatedPost.setComments(updatedPostDTO.getComments()); // Set comments from DTO if any
+            updatedPost.setLastUpdatedAt(new Date()); // Set the updated timestamp
+
+            // Call the service to update the post
             Post post = postService.updatePost(postId, updatedPost);
+
+            // Return the updated post
             return ResponseEntity.ok(post);
+
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("An error occurred while updating the post.");
         }
     }
+
 
     // ✅ Delete post
     @DeleteMapping("/{id}")
@@ -175,5 +206,19 @@ public class PostController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("An error occurred while deleting the post.");
         }
+    }
+
+    @PutMapping("/update-status/{postId}")
+    public ResponseEntity<?> updatePostStatus(@PathVariable Long postId, @RequestBody Map<String, String> request) {
+        String newStatus = request.get("status");
+
+        Optional<Post> optionalPost = postService.getPostById(postId);
+        if (optionalPost.isPresent()) {
+            Post post = optionalPost.get();
+            post.setStatus(Status.valueOf(newStatus)); // Convert String to Enum
+            postService.registerPost(post);
+            return ResponseEntity.ok("Post status updated successfully!");
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Post not found");
     }
 }

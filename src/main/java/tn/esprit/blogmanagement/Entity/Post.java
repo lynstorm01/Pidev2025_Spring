@@ -39,7 +39,7 @@ public class Post {
 
     // Add UpdatedAt field to store last updated time
     @Temporal(TemporalType.TIMESTAMP)
-    private Date LastUpdatedAt = new Date();  // Set default to current date
+    private Date LastUpdatedAt ;  // Set default to current date
 
     // Number of likes (default 0)
     @Column(nullable = false)
@@ -53,6 +53,10 @@ public class Post {
     @NotNull(message = "Category is required")
     @Column(nullable = false)
     private CategoryType category;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status status = Status.PENDING;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
