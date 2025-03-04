@@ -1,7 +1,5 @@
 package tn.esprit.contractmanegement.Entity;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.FutureOrPresent;
@@ -57,8 +55,11 @@ public class Contract {
     @Column(name = "signature", columnDefinition = "LONGBLOB")
     private byte[] signature;
     private boolean signed;
+    private String signatureHash;
 
-//    @ManyToOne
-//    @JoinColumn(name = "user_id",nullable = true)
-//    private User user;
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonBackReference
+    private User user;
+
 }

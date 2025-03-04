@@ -25,7 +25,7 @@ public class JwtUtil {
         return Jwts.builder()
                 .setSubject(user.getUsername())  // Username as subject
                 .claim("userId", user.getId())   // ✅ Added userId
-                .claim("role", user.getRole().name())  // ✅ Store role in JWT
+//                .claim("role", user.getRole().name())  // ✅ Store role in JWT
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) // 1-hour expiry
                 .signWith(key)

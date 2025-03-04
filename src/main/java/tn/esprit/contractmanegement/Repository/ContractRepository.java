@@ -11,5 +11,5 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     List<Contract> findByEndDateBetween(LocalDate start, LocalDate end);
 
     List<Contract> findByEndDate(Date endDate);
-
+    List<Contract> findByUser_Id(Long userId);
 }

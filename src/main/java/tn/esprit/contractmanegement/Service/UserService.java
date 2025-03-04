@@ -43,7 +43,7 @@ public class UserService implements IUserService, UserDetailsService {
             user.setFirstName(updatedUser.getFirstName());
             user.setLastName(updatedUser.getLastName());
             user.setPassword(updatedUser.getPassword()); // ensure password is encoded
-            user.setRole(updatedUser.getRole());
+//            user.setRole(updatedUser.getRole());
             user.setEmail(updatedUser.getEmail());
             user.setPhoneNumber(updatedUser.getPhoneNumber());
             return userRepository.save(user);
@@ -69,7 +69,7 @@ public class UserService implements IUserService, UserDetailsService {
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getUsername())
                 .password(user.getPassword())
-                .roles(user.getRole().name())  // Convert the Role enum to a String
+//                .roles(user.getRole().name())  // Convert the Role enum to a String
                 .build();
     }
 }

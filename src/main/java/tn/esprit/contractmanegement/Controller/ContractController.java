@@ -78,10 +78,25 @@ public class ContractController {
                                                    @RequestParam("signature") MultipartFile signatureFile) {
         try {
             byte[] signatureBytes = signatureFile.getBytes();
-            Contract signedContract = contractService.SignContract(id, signatureBytes);
+            Contract signedContract = contractService.signContract(id, signatureBytes);
             return ResponseEntity.ok(signedContract);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+    @GetMapping("/user/{userId}")
+    public List<Contract> getContractsByUserId(@PathVariable Long userId) {
+        return contractService.getContractsByUserId(userId);
+    }
+
+    @PostMapping("/contracts/{id}/verify-signature")
+    public ResponseEntity<Boolean> verifySignature(@PathVariable Long id, @RequestParam("signature") MultipartFile signatureFile) {
+        try {
+            boolean isValid = contractService.verifySignature(id, signatureFile.getBytes());
+            return ResponseEntity.ok(isValid);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
+        }
+    }
+
 }

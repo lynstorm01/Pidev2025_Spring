@@ -4,10 +4,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tn.esprit.contractmanegement.Entity.Contract;
 import tn.esprit.contractmanegement.Entity.Property;
+import tn.esprit.contractmanegement.Entity.User;
 import tn.esprit.contractmanegement.Repository.ContractRepository;
 import tn.esprit.contractmanegement.Repository.UserRepository;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,22 +19,28 @@ import java.util.Optional;
 public class ContractService implements IContractService {
 
     private final ContractRepository contractRepository;
-    //private final UserRepository userRepository;
+    private final UserRepository userRepository;
 
     @Autowired
     public ContractService(ContractRepository contractRepository, UserRepository userRepository) {
         this.contractRepository = contractRepository;
-       // this.userRepository = userRepository;
+        this.userRepository = userRepository;
     }
 
-    // ✅ Create a contract (Only if user exists)
+    // ✅ Create a contract (Linking it to the static user with id=1)
     @Override
     public Contract createContract(Contract contract) {
         // Ensure property is correctly linked
         if (contract.getProperty() != null) {
             contract.getProperty().setContract(contract);
         }
-
+        // Set static user (id=1)
+        Optional<User> staticUser = userRepository.findById(1L);
+        if (staticUser.isPresent()) {
+            contract.setUser(staticUser.get());
+        } else {
+            throw new RuntimeException("Static user with id 1 not found");
+        }
         return contractRepository.save(contract);
     }
 
@@ -38,7 +48,7 @@ public class ContractService implements IContractService {
     @Override
     public List<Contract> getAllContracts() {
         List<Contract> contracts = contractRepository.findAll();
-        return contracts.isEmpty() ? new ArrayList<>() : contracts;  // ✅ Always return a valid array
+        return contracts.isEmpty() ? new ArrayList<>() : contracts;
     }
 
     // ✅ Get a single contract
@@ -60,20 +70,18 @@ public class ContractService implements IContractService {
             // Update property details safely
             if (updatedContract.getProperty() != null) {
                 if (existingContract.getProperty() == null) {
-                    existingContract.setProperty(new Property()); // Ensure property exists
+                    existingContract.setProperty(new Property());
                 }
                 existingContract.getProperty().setAddress(updatedContract.getProperty().getAddress());
                 existingContract.getProperty().setPropertyType(updatedContract.getProperty().getPropertyType());
                 existingContract.getProperty().setValue(updatedContract.getProperty().getValue());
             }
-
             return contractRepository.save(existingContract);
         }).orElseThrow(() -> new RuntimeException("Contract not found"));
     }
 
     // ✅ Delete contract (Admin only)
     @Override
-    //@PreAuthorize("hasRole('ADMIN')")
     public void deleteContract(Long id) {
         if (!contractRepository.existsById(id)) {
             throw new RuntimeException("Contract not found");
@@ -81,16 +89,53 @@ public class ContractService implements IContractService {
         contractRepository.deleteById(id);
     }
 
-    public Contract SignContract(Long contractId, byte[] signature) {
-        Contract contract = contractRepository.findById(contractId)
-                .orElseThrow(() -> new RuntimeException("Contrat non trouvé"));
 
-        if (contract.isSigned()) {
-            throw new RuntimeException("Le contrat est déjà signé et ne peut plus être modifié.");
+    ///HASH-SING
+
+    public boolean verifySignature(Long contractId, byte[] signatureToVerify) {
+        Contract contract = contractRepository.findById(contractId)
+                .orElseThrow(() -> new RuntimeException("Contract not found"));
+
+        if (!contract.isSigned()) {
+            return false; // Contract is not signed
         }
 
-        contract.setSignature(signature);
-        contract.setSigned(true);
-        return contractRepository.save(contract);
+        String newHash = computeHash(signatureToVerify);
+        return newHash.equals(contract.getSignatureHash());
+    }
+
+    private String computeHash(byte[] data) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(data);
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Error computing hash", e);
+        }
+    }
+
+    //////
+
+
+
+    // ✅ Sign contract method
+    public Contract signContract(Long contractId, byte[] signature) {
+        return contractRepository.findById(contractId).map(contract -> {
+            if (contract.isSigned()) {
+                throw new RuntimeException("Contract is already signed.");
+            }
+
+            // Compute hash of signature
+            String signatureHash = computeHash(signature);
+            contract.setSignature(signature);
+            contract.setSignatureHash(signatureHash);
+            contract.setSigned(true);
+
+            return contractRepository.save(contract);
+        }).orElseThrow(() -> new RuntimeException("Contract not found"));
+    }
+
+    public List<Contract> getContractsByUserId(Long userId) {
+        return contractRepository.findByUser_Id(userId);
     }
 }
