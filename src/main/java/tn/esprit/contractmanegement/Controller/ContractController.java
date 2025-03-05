@@ -89,14 +89,23 @@ public class ContractController {
         return contractService.getContractsByUserId(userId);
     }
 
-    @PostMapping("/contracts/{id}/verify-signature")
-    public ResponseEntity<Boolean> verifySignature(@PathVariable Long id, @RequestParam("signature") MultipartFile signatureFile) {
+    @PutMapping("/{id}/verify-signature")
+    public ResponseEntity<Contract> verifySignature(@PathVariable Long id, @RequestParam("status") String status) {
+        // The admin can send status=VERIFIED or status=INVALID
+        Contract contract = contractService.getContractById(id)
+                .orElseThrow(() -> new RuntimeException("Contract not found"));
+        contract.setSignatureVerificationStatus(status.toUpperCase());
+        return ResponseEntity.ok(contractService.updateContract(id, contract));
+    }
+    @PutMapping("/{id}/approve-esign")
+    public ResponseEntity<Contract> approveEsign(@PathVariable Long id) {
         try {
-            boolean isValid = contractService.verifySignature(id, signatureFile.getBytes());
-            return ResponseEntity.ok(isValid);
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
+            Contract updated = contractService.approveEsignature(id);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
 
 }

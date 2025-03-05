@@ -15,4 +15,5 @@ public interface IContractService {
     Contract updateContract(Long contractId, Contract updatedContract);
     void deleteContract(Long id);
     public Contract signContract(Long contractId, byte[] signature);
+    public Contract approveEsignature(Long contractId);
 }

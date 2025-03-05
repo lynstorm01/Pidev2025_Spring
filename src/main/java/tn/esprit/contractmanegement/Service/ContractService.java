@@ -30,7 +30,12 @@ public class ContractService implements IContractService {
     // ✅ Create a contract (Linking it to the static user with id=1)
     @Override
     public Contract createContract(Contract contract) {
+        // Check if the contract number already exists
+        if (contractRepository.existsByContractNumber(contract.getContractNumber())) {
+            throw new RuntimeException("Contract number already exists. Please use a unique number.");
+        }
         // Ensure property is correctly linked
+
         if (contract.getProperty() != null) {
             contract.getProperty().setContract(contract);
         }
@@ -47,7 +52,7 @@ public class ContractService implements IContractService {
     // ✅ Get all contracts
     @Override
     public List<Contract> getAllContracts() {
-        List<Contract> contracts = contractRepository.findAll();
+        List<Contract> contracts = contractRepository.findByStatusNot(Contract.ContractStatus.ARCHIVED);
         return contracts.isEmpty() ? new ArrayList<>() : contracts;
     }
 
@@ -92,17 +97,17 @@ public class ContractService implements IContractService {
 
     ///HASH-SING
 
-    public boolean verifySignature(Long contractId, byte[] signatureToVerify) {
-        Contract contract = contractRepository.findById(contractId)
-                .orElseThrow(() -> new RuntimeException("Contract not found"));
-
-        if (!contract.isSigned()) {
-            return false; // Contract is not signed
-        }
-
-        String newHash = computeHash(signatureToVerify);
-        return newHash.equals(contract.getSignatureHash());
-    }
+//    public boolean verifySignature(Long contractId, byte[] signatureToVerify) {
+//        Contract contract = contractRepository.findById(contractId)
+//                .orElseThrow(() -> new RuntimeException("Contract not found"));
+//
+//        if (!contract.isSigned()) {
+//            return false; // Contract is not signed
+//        }
+//
+//        String newHash = computeHash(signatureToVerify);
+//        return newHash.equals(contract.getSignatureHash());
+//    }
 
     private String computeHash(byte[] data) {
         try {
@@ -130,7 +135,7 @@ public class ContractService implements IContractService {
             contract.setSignature(signature);
             contract.setSignatureHash(signatureHash);
             contract.setSigned(true);
-
+            contract.setSignatureVerificationStatus("PENDING");
             return contractRepository.save(contract);
         }).orElseThrow(() -> new RuntimeException("Contract not found"));
     }
@@ -138,4 +143,15 @@ public class ContractService implements IContractService {
     public List<Contract> getContractsByUserId(Long userId) {
         return contractRepository.findByUser_Id(userId);
     }
+
+
+    public Contract approveEsignature(Long contractId) {
+        Contract contract = contractRepository.findById(contractId)
+                .orElseThrow(() -> new RuntimeException("Contract not found"));
+        // Set the status to VERIFIED upon approval
+        contract.setSignatureVerificationStatus("VERIFIED");
+        return contractRepository.save(contract);
+    }
+
 }
+

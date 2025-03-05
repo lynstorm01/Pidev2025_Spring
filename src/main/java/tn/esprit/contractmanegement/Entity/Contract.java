@@ -26,14 +26,15 @@ public class Contract {
     private Long id;
 
     @NotBlank(message = "Contract number is required")
+    @Column(unique = true)
     private String contractNumber;
 
     @NotNull(message = "Start date is required")
     @Temporal(TemporalType.DATE)
-    @FutureOrPresent
+    //@FutureOrPresent
     private Date startDate;
 
-    @FutureOrPresent
+    //@FutureOrPresent
     @NotNull(message = "End date is required")
     @Temporal(TemporalType.DATE)
     private Date endDate;
@@ -56,6 +57,12 @@ public class Contract {
     private byte[] signature;
     private boolean signed;
     private String signatureHash;
+
+    @Column(name = "signature_verification_status")
+    private String signatureVerificationStatus; // Possible values: "PENDING", "VERIFIED", "INVALID"
+
+
+
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
