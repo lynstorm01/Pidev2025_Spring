@@ -18,5 +18,7 @@ public class CommentDTO {
     private Boolean isEdited;
     private Long userId;   // Only return userId, not full User details
     private Long postId;   // Include the post ID
+    private String Username;
+    private String PostTitle;
     private List<Long> repliesId;  // Include replies if needed
 }

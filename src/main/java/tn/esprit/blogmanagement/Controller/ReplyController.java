@@ -15,9 +15,7 @@ import tn.esprit.blogmanagement.Service.ReplyService;
 import tn.esprit.blogmanagement.Service.PostService;
 import tn.esprit.blogmanagement.Service.UserService;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -67,7 +65,6 @@ public class ReplyController {
             Reply reply = new Reply();
             reply.setContent(replyRequest.getContent());
             reply.setCreatedAt(new Date());
-            reply.setLastUpdatedAt(new Date());
             reply.setUser(user);
             reply.setPost(post);
             reply.setComment(comment);
@@ -83,8 +80,11 @@ public class ReplyController {
                     createdReply.getLastUpdatedAt(),
                     createdReply.getIsEdited(),
                     createdReply.getUser().getId(),  // Only the userId
+                    createdReply.getUser().getUsername(),  // Only the userId
                     createdReply.getPost().getId() ,  // Only the postId
-                    createdReply.getComment().getId()   // Only the postId
+                    createdReply.getPost().getTitle() ,  // Only the postId
+                    createdReply.getComment().getId(),   // Only the postId
+                    createdReply.getComment().getContent()   // Only the postId
             );
 
             // Return the created reply as a DTO in the response body
@@ -108,9 +108,12 @@ public class ReplyController {
                             reply.getCreatedAt(),
                             reply.getLastUpdatedAt(),
                             reply.getIsEdited(),
-                            reply.getUser().getId(),  // Only return userId
+                            reply.getUser().getId(), // Only return userId
+                            reply.getUser().getUsername(),
                             reply.getComment().getPost().getId(), // Include postId
-                            reply.getComment().getId()
+                            reply.getComment().getPost().getTitle(),
+                            reply.getComment().getId(),
+                            reply.getComment().getContent()
                     )
             ).toList();
 
@@ -148,8 +151,11 @@ public class ReplyController {
                     reply.getLastUpdatedAt(),
                     reply.getIsEdited(),
                     reply.getUser().getId(),  // Only the user ID
-                    reply.getComment().getPost().getId(),  // Only the user ID
-                    reply.getComment().getId()  // Get the post ID via the comment's post
+                    reply.getUser().getUsername(),
+                    reply.getComment().getPost().getId(), // Include postId
+                    reply.getComment().getPost().getTitle(),
+                    reply.getComment().getId(),
+                    reply.getComment().getContent()
             );
 
             return ResponseEntity.ok(replyDTO);  // Return the reply DTO with 200 OK
@@ -162,27 +168,75 @@ public class ReplyController {
 
 
 
-    // ✅ Update reply
     @PutMapping("/{replyId}")
-    public ResponseEntity<?> updateReply(@PathVariable Long replyId, @Valid @RequestBody Reply updatedReply) {
+    public ResponseEntity<?> updateReply(@PathVariable Long replyId, @Valid @RequestBody ReplyRequest replyRequest) {
         try {
+            // Check if the reply exists
             Optional<Reply> existingReply = replyService.getReplyById(replyId);
             if (existingReply.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Reply with ID " + replyId + " not found.");
+                        .body(Map.of("error", "Reply with ID " + replyId + " not found."));
             }
 
-            // Set the updatedAt field to current time
-            updatedReply.setLastUpdatedAt(new Date());  // Ensure the updatedAt is set before the update
-            updatedReply.setIsEdited(true);  // Ensure the updatedAt is set before the update
+            // Check if post exists
+            Optional<Post> post = postService.getPostById(replyRequest.getPostId());
+            if (post.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "Post with ID " + replyRequest.getPostId() + " not found."));
+            }
 
-            Reply reply = replyService.updateReply(replyId, updatedReply);
-            return ResponseEntity.ok(reply);
+            // Check if comment exists
+            Optional<Comment> comment = commentService.getCommentById(replyRequest.getCommentId());
+            if (comment.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "Comment with ID " + replyRequest.getCommentId() + " not found."));
+            }
+
+            // Check if user exists
+            Optional<User> user = userService.getUserById(replyRequest.getUserId());
+            if (user.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "User with ID " + replyRequest.getUserId() + " not found."));
+            }
+
+            // Get the existing reply and update fields
+            Reply reply = existingReply.get();
+            reply.setPost(post.get());
+            reply.setComment(comment.get());
+            reply.setUser(user.get());
+            reply.setContent(replyRequest.getContent());
+            reply.setLastUpdatedAt(new Date());
+            reply.setIsEdited(true);
+
+            // Save updated reply
+            Reply updatedReply = replyService.updateReply(replyId, reply);
+
+            // ✅ Use HashMap instead of Map.of() to avoid method limitation
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", updatedReply.getId());
+            response.put("content", updatedReply.getContent());
+            response.put("createdAt", updatedReply.getCreatedAt());
+            response.put("lastUpdatedAt", updatedReply.getLastUpdatedAt());
+            response.put("isEdited", updatedReply.getIsEdited());
+            response.put("userId", updatedReply.getUser().getId());
+            response.put("username", updatedReply.getUser().getUsername());
+            response.put("postId", updatedReply.getPost().getId());
+            response.put("postTitle", updatedReply.getPost().getTitle());
+            response.put("commentContent", updatedReply.getComment().getContent());
+            response.put("commentId", updatedReply.getComment().getId());
+
+            return ResponseEntity.ok(response);
+
         } catch (Exception e) {
+            e.printStackTrace(); // Log error for debugging
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("An error occurred while updating the reply.");
+                    .body(Map.of("error", "An error occurred while updating the reply."));
         }
     }
+
+
+
+
 
     // ✅ Delete reply
     @DeleteMapping("/{id}")

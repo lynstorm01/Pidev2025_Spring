@@ -14,6 +14,10 @@ public class ReplyDTO {
     private Date lastUpdatedAt;
     private Boolean isEdited;
     private Long userId;   // Only return userId, not full User details
+    private String username;
     private Long postId;   // Only return userId, not full User details
+    private String postTitle;
     private Long CommentId;   // Only return userId, not full User details
+    private String commentContent;
+
 }

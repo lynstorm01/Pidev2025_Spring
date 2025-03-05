@@ -34,7 +34,7 @@ public class Comment {
     private Date createdAt = new Date(); // Default to current date
 
     @Temporal(TemporalType.TIMESTAMP)
-    private Date lastUpdatedAt = new Date(); // Default to current date
+    private Date lastUpdatedAt ; // Default to current date
 
     private Boolean isEdited = false; // Default to false
 

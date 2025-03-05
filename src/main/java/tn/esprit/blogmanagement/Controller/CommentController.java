@@ -56,7 +56,6 @@ public class CommentController {
             Comment comment = new Comment();
             comment.setContent(commentRequest.getContent());
             comment.setCreatedAt(new Date());
-            comment.setLastUpdatedAt(new Date());
             comment.setUser(user); // Set the user by userId
             comment.setPost(post); // Set the user by userId
             comment.setReplies(List.of()); // Ensure comments are set as an empty list if none provided
@@ -85,6 +84,8 @@ public class CommentController {
                             comment.getIsEdited(),
                             comment.getUser().getId(),  // Only return userId
                             comment.getPost().getId(),  // Include postId
+                            comment.getUser().getUsername(),
+                            comment.getPost().getTitle(),
                             comment.getReplies().stream().map(reply ->
                                     reply.getId()  // Only return the reply ID
                             ).toList()
@@ -126,6 +127,8 @@ public class CommentController {
                     comment.getIsEdited(),
                     comment.getUser().getId(),  // Only the user ID
                     comment.getPost().getId(),  // Post ID
+                    comment.getUser().getUsername(),
+                    comment.getPost().getTitle(),
                     comment.getReplies().stream().map(reply -> reply.getId()).collect(Collectors.toList()) // List of reply IDs
             );
 
@@ -138,9 +141,8 @@ public class CommentController {
 
 
 
-    // ✅ Update comment
     @PutMapping("/{commentId}")
-    public ResponseEntity<?> updateComment(@PathVariable Long commentId, @Valid @RequestBody Comment updatedComment) {
+    public ResponseEntity<?> updateComment(@PathVariable Long commentId, @Valid @RequestBody CommentRequest commentRequest) {
         try {
             Optional<Comment> existingComment = commentService.getCommentById(commentId);
             if (existingComment.isEmpty()) {
@@ -148,17 +150,37 @@ public class CommentController {
                         .body("Comment with ID " + commentId + " not found.");
             }
 
-            // Set the updatedAt field to current time
-            updatedComment.setLastUpdatedAt(new Date());  // Ensure the updatedAt is set before the update
-            updatedComment.setIsEdited(true);  // Ensure the updatedAt is set before the update
+            // Fetch the User by userId from the PostDTO
+            Optional<User> user = userService.getUserById(commentRequest.getUserId());  // Assuming userService.getUserById is available
+            if (user.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("User with ID " + commentRequest.getUserId() + " not found.");
+            }
 
-            Comment comment = commentService.updateComment(commentId, updatedComment);
-            return ResponseEntity.ok(comment);
+            Optional<Post> post = postService.getPostById(commentRequest.getPostId());
+            if (post.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Post with ID " + commentRequest.getPostId() + " not found.");
+            }
+
+            Comment commentToUpdate = existingComment.get();
+
+            // Update fields using the request DTO
+            commentToUpdate.setContent(commentRequest.getContent());
+            commentToUpdate.setPost(post.get());
+            commentToUpdate.setUser(user.get());
+            commentToUpdate.setLastUpdatedAt(new Date());
+            commentToUpdate.setIsEdited(true);
+
+            // Save updated comment
+            Comment updatedComment = commentService.updateComment(commentId, commentToUpdate);
+            return ResponseEntity.ok(updatedComment);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("An error occurred while updating the comment.");
         }
     }
+
 
     // ✅ Delete comment
     @DeleteMapping("/{id}")
