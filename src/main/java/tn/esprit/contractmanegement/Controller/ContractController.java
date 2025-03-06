@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import tn.esprit.contractmanegement.Entity.Contract;
+import tn.esprit.contractmanegement.Entity.ContractVersion;
 import tn.esprit.contractmanegement.Service.ContractService;
 
 import jakarta.validation.Valid;
@@ -107,5 +108,10 @@ public class ContractController {
         }
     }
 
+    @GetMapping("/{contractId}/versions")
+    public ResponseEntity<List<ContractVersion>> getVersions(@PathVariable Long contractId) {
+        List<ContractVersion> versions = contractService.getVersionsByContract(contractId);
+        return ResponseEntity.ok(versions);
+    }
 
 }
