@@ -56,6 +56,10 @@ public class UserService implements IUserService, UserDetailsService {
     }
 
     @Override
+    public List<User> findByUsernameIn(List<String> usernames){return userRepository.findByUsernameIn(usernames);
+    }
+
+    @Override
     public Optional<User> getUsername(String username) {
         return userRepository.findByUsername(username);
     }

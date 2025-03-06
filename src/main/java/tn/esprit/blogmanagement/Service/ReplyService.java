@@ -50,4 +50,9 @@ public class ReplyService implements IReplyService {
         replyRepository.deleteById(id);
     }
 
+    @Override
+    public List<Reply> getRepliesForComment(Long commentId) {
+        return replyRepository.findByCommentId(commentId);  // Fetch replies for the given comment ID
+    }
+
 }

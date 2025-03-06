@@ -17,4 +17,5 @@ public interface IUserService {
 
     void deleteUser(Long id);
     Optional<User> getUsername(String username);
+    List<User> findByUsernameIn(List<String> usernames);
 }

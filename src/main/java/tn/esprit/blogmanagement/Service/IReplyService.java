@@ -11,4 +11,5 @@ public interface IReplyService {
     List<Reply> getAllReplys();
     Reply updateReply(Long id,Reply updatedReply);
     void deleteReply(Long id);
+    List<Reply>getRepliesForComment(Long id);
 }

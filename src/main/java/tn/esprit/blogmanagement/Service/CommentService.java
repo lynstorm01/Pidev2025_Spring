@@ -4,9 +4,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tn.esprit.blogmanagement.Entity.Comment;
 import tn.esprit.blogmanagement.Repository.CommentRepository;
+
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class CommentService implements ICommentService {
@@ -47,6 +51,25 @@ public class CommentService implements ICommentService {
     @Override
     public void deleteComment(Long id) {
         commentRepository.deleteById(id);
+    }
+
+    @Override
+    public List<Comment> getCommentsForPost(Long postId) {
+        // Fetch comments by post ID
+        return commentRepository.findByPostId(postId);
+    }
+
+    // Helper method to extract mentioned usernames from the comment
+    public List<String> extractMentions(String content) {
+        List<String> mentions = new ArrayList<>();
+        Pattern pattern = Pattern.compile("@(\\w+)");  // Regex to find mentions starting with '@'
+        Matcher matcher = pattern.matcher(content);
+
+        while (matcher.find()) {
+            mentions.add(matcher.group(1));  // Extract username without '@'
+        }
+
+        return mentions;
     }
 
 }

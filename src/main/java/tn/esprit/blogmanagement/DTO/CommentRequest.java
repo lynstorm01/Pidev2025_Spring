@@ -25,4 +25,7 @@ public class CommentRequest {
 
     private List<Reply> replies; // List of replies associated with this comment
 
+    private List<String> mentions; // List of mentioned usernames
+
+
 }

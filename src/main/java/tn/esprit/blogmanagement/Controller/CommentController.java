@@ -12,6 +12,8 @@ import tn.esprit.blogmanagement.Entity.User;
 import tn.esprit.blogmanagement.Service.CommentService;
 import tn.esprit.blogmanagement.Service.PostService;
 import tn.esprit.blogmanagement.Service.UserService;
+import tn.esprit.blogmanagement.Service.mailService;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -24,51 +26,60 @@ public class CommentController {
     private final CommentService commentService;
     private final UserService userService;
     private final PostService postService;
+    private final tn.esprit.blogmanagement.Service.mailService mailService;
 
-    public CommentController(CommentService commentService, UserService userService, PostService postService) {
+
+    public CommentController(CommentService commentService, UserService userService, PostService postService, mailService mailService) {
         this.commentService = commentService;
         this.userService = userService;
         this.postService = postService;
+        this.mailService = mailService;
     }
 
     // ✅ Create a new comment
     @PostMapping("/add")
     public ResponseEntity<Comment> createComment(@Valid @RequestBody CommentRequest commentRequest) {
         try {
-            // Retrieve the user by userId
+            // Retrieve the user and post by IDs
             Optional<User> optionalUser = userService.getUserById(commentRequest.getUserId());
             Optional<Post> optionalPost = postService.getPostById(commentRequest.getPostId());
 
-            // Check if the user exists, if not return a bad request response
-            if (optionalUser.isEmpty()) {
-                return ResponseEntity.badRequest().body(null); // Return a bad request if user is not found
-            }
-            if (optionalPost.isEmpty()) {
-                return ResponseEntity.badRequest().body(null); // Return a bad request if Post is not found
+            if (optionalUser.isEmpty() || optionalPost.isEmpty()) {
+                return ResponseEntity.badRequest().body(null); // Return bad request if user or post not found
             }
 
-            // Get the User from Optional
             User user = optionalUser.get();
-            // Get the Post from Optional
             Post post = optionalPost.get();
 
-            // Create a new Comment entity from the DTO
+            // Create a new comment entity
             Comment comment = new Comment();
             comment.setContent(commentRequest.getContent());
             comment.setCreatedAt(new Date());
-            comment.setUser(user); // Set the user by userId
-            comment.setPost(post); // Set the user by userId
-            comment.setReplies(List.of()); // Ensure comments are set as an empty list if none provided
+            comment.setUser(user);
+            comment.setPost(post);
+            comment.setReplies(List.of());
 
-            // Save the comment using the service
+            // Save the comment
             Comment createdComment = commentService.registerComment(comment);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(createdComment); // Return the created comment
+            // ✅ Handle Mentions (NEW)
+            List<String> mentionedUsernames = commentService.extractMentions(commentRequest.getContent());
+            System.out.println(mentionedUsernames);
+            if (!mentionedUsernames.isEmpty()) {
+                List<User> mentionedUsers = userService.findByUsernameIn(mentionedUsernames);
+                System.out.println(mentionedUsers);
+                mentionedUsers.forEach(mentionedUser ->
+                        mailService.sendMentionNotification(mentionedUser.getEmail(), comment.getContent(),mentionedUser.getUsername())
+                );
+            }
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdComment);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // Handle internal errors
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
 
 
     // ✅ Get all comments with only reply IDs

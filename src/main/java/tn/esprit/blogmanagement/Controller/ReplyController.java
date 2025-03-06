@@ -253,4 +253,10 @@ public class ReplyController {
                     .body("An error occurred while deleting the reply.");
         }
     }
+
+    @GetMapping("/{commentId}/replies")
+    public List<Reply> getRepliesForComment(@PathVariable Long commentId) {
+        return replyService.getRepliesForComment(commentId);  // Get replies for the comment ID
+    }
+
 }

@@ -5,13 +5,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.blogmanagement.DTO.PostDTO;
 import tn.esprit.blogmanagement.DTO.PostRequest;
+import tn.esprit.blogmanagement.Entity.Comment;
 import tn.esprit.blogmanagement.Entity.Post;
 import jakarta.validation.Valid;
 import tn.esprit.blogmanagement.Entity.Status;
 import tn.esprit.blogmanagement.Entity.User;
 import tn.esprit.blogmanagement.Repository.PostRepository;
+import tn.esprit.blogmanagement.Service.CommentService;
 import tn.esprit.blogmanagement.Service.PostService;
 import tn.esprit.blogmanagement.Service.UserService;
+import tn.esprit.blogmanagement.Service.mailService;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -24,11 +28,15 @@ public class PostController {
     private final PostService postService;
     private final UserService userService;
     private final PostRepository postRepository;
+    private final tn.esprit.blogmanagement.Service.mailService mailService;
+    private final CommentService commentService;
 
-    public PostController(PostService postService, UserService userService, PostRepository postRepository) {
+    public PostController(PostService postService, UserService userService, PostRepository postRepository, mailService mailService, CommentService commentService) {
         this.postService = postService;
         this.userService = userService;
         this.postRepository = postRepository;
+        this.mailService = mailService;
+        this.commentService = commentService;
     }
 
     // ✅ Create a new post
@@ -58,6 +66,8 @@ public class PostController {
             // Save the post using the service
             Post createdPost = postService.registerPost(post);
 
+            mailService.sendPostPendingEmail(post.getUser().getEmail(), postRequest.getTitle(),post.getUser().getUsername());
+                System.out.println(" Post submitted and email sent to "+ post.getUser().getUsername());
             return ResponseEntity.status(HttpStatus.CREATED).body(createdPost); // Return the created post
         } catch (Exception e) {
             e.printStackTrace();
@@ -217,8 +227,23 @@ public class PostController {
             Post post = optionalPost.get();
             post.setStatus(Status.valueOf(newStatus)); // Convert String to Enum
             postService.registerPost(post);
+            String PostLink = "http://localhost:4200/blogs";
+            if(newStatus.equals("APPROVED")) {
+                mailService.sendPostApprovedEmail(post.getUser().getEmail(), post.getUser().getUsername(),post.getTitle(), PostLink);
+                System.out.println(" Post Approvel and email sent to "+ post.getUser().getUsername());
+            }
+            if(newStatus.equals("REJECTED")) {
+                mailService.sendPostRejectedEmail(post.getUser().getEmail(), post.getUser().getUsername(),post.getTitle());
+                System.out.println(" Post Rejection and email sent to "+ post.getUser().getUsername());
+            }
             return ResponseEntity.ok("Post status updated successfully!");
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Post not found");
+    }
+
+    // Endpoint to get comments for a specific post
+    @GetMapping("/{postId}/comments")
+    public List<Comment> getCommentsForPost(@PathVariable Long postId) {
+        return commentService.getCommentsForPost(postId);
     }
 }
