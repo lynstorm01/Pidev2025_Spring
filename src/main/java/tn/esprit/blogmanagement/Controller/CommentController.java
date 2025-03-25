@@ -58,6 +58,8 @@ public class CommentController {
             comment.setUser(user);
             comment.setPost(post);
             comment.setReplies(List.of());
+            comment.setGifUrl(commentRequest.getGifUrl());  // Store GIF URL
+
 
             // Save the comment
             Comment createdComment = commentService.registerComment(comment);
@@ -97,6 +99,7 @@ public class CommentController {
                             comment.getPost().getId(),  // Include postId
                             comment.getUser().getUsername(),
                             comment.getPost().getTitle(),
+                            comment.getGifUrl(),
                             comment.getReplies().stream().map(reply ->
                                     reply.getId()  // Only return the reply ID
                             ).toList()
@@ -140,6 +143,7 @@ public class CommentController {
                     comment.getPost().getId(),  // Post ID
                     comment.getUser().getUsername(),
                     comment.getPost().getTitle(),
+                    comment.getGifUrl(),
                     comment.getReplies().stream().map(reply -> reply.getId()).collect(Collectors.toList()) // List of reply IDs
             );
 

@@ -27,5 +27,8 @@ public class CommentRequest {
 
     private List<String> mentions; // List of mentioned usernames
 
+    private String gifUrl;  // New Field
+
+
 
 }

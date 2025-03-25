@@ -57,5 +57,8 @@ public class Comment {
     @ElementCollection
     private List<String> mentions = new ArrayList<>();
 
+    private String gifUrl;  // New field to store GIF URL
+
+
 }
 

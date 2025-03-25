@@ -20,5 +20,6 @@ public class CommentDTO {
     private Long postId;   // Include the post ID
     private String Username;
     private String PostTitle;
+    private String gifUrl;  // New Field
     private List<Long> repliesId;  // Include replies if needed
 }
