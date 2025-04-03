@@ -3,11 +3,20 @@ package tn.esprit.blogmanagement.DTO;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import tn.esprit.blogmanagement.Entity.CategoryType;
 import tn.esprit.blogmanagement.Entity.Comment;
 
 import java.util.List;
+import java.util.Set;
 
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 public class PostRequest {
 
     @NotNull(message = "User ID is required")
@@ -26,44 +35,12 @@ public class PostRequest {
 
     private List<Comment> comments = List.of(); // Default to empty list if no comments are provided
 
-    // Getters and Setters
-    public Long getUserId() {
-        return userId;
-    }
+    // Add filter result fields
+    private Boolean containsBadWords;
+    private Set<String> badWords;
+    private Boolean insuranceRelated;
+    private Boolean duplicateContent;
+    private Integer duplicateCount;
+    private List<PostDTO> similarPosts;
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
-    }
-
-    public CategoryType getCategory() {
-        return category;
-    }
-
-    public void setCategory(CategoryType category) {
-        this.category = category;
-    }
-
-    public List<Comment> getComments() {
-        return comments;
-    }
-
-    public void setComments(List<Comment> comments) {
-        this.comments = comments;
-    }
 }

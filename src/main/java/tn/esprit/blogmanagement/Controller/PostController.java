@@ -1,5 +1,6 @@
 package tn.esprit.blogmanagement.Controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,15 +12,9 @@ import jakarta.validation.Valid;
 import tn.esprit.blogmanagement.Entity.Status;
 import tn.esprit.blogmanagement.Entity.User;
 import tn.esprit.blogmanagement.Repository.PostRepository;
-import tn.esprit.blogmanagement.Service.CommentService;
-import tn.esprit.blogmanagement.Service.PostService;
-import tn.esprit.blogmanagement.Service.UserService;
-import tn.esprit.blogmanagement.Service.mailService;
+import tn.esprit.blogmanagement.Service.*;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/Blog")
@@ -39,6 +34,9 @@ public class PostController {
         this.commentService = commentService;
     }
 
+    @Autowired
+    private ContentFilterService contentFilterService;
+
     // ✅ Create a new post
     @PostMapping("/add")
     public ResponseEntity<Post> createPost(@Valid @RequestBody PostRequest postRequest) {
@@ -54,6 +52,9 @@ public class PostController {
             // Get the User from Optional
             User user = optionalUser.get();
 
+            ContentFilterService.ContentFilterResult filterResult =
+                    contentFilterService.filterContent(postRequest.getContent(), postRequest.getTitle());
+
             // Create a new Post entity from the DTO
             Post post = new Post();
             post.setTitle(postRequest.getTitle());
@@ -61,13 +62,66 @@ public class PostController {
             post.setCategory(postRequest.getCategory());
             post.setUser(user); // Set the user by userId
             post.setComments(List.of()); // Ensure comments are set as an empty list if none provided
+
+
+
+            // Set filter details (for frontend)
+            Map<String, Object> filterDetails = new HashMap<>();
+            post.setFilterDetails(filterDetails);
+
+            if (filterResult.isContainsBadWords()) {
+                post.setStatus(Status.REJECTED);
+                String reason = "Contains inappropriate language";
+                post.setRejectionReason(reason);
+                filterDetails.put("badWords", filterResult.getBadWords());
+
+                // Send rejection email
+                mailService.sendPostRejectedEmailError(
+                        user.getEmail(),
+                        user.getUsername(),
+                        postRequest.getTitle(),
+                        reason,
+                        filterDetails
+                );
+                Post createdPost = postService.registerPost(post);
+                return ResponseEntity.status(HttpStatus.CREATED).body(createdPost); // Return the created post
+            }
+            if (!filterResult.isInsuranceRelated()) {
+                post.setStatus(Status.REJECTED);
+                String reason = "Content not insurance-related";
+                post.setRejectionReason(reason);
+
+                mailService.sendPostRejectedEmailError(
+                        user.getEmail(),
+                        user.getUsername(),
+                        postRequest.getTitle(),
+                        reason,
+                        new HashMap<>()
+                );
+                Post createdPost = postService.registerPost(post);
+                return ResponseEntity.status(HttpStatus.CREATED).body(createdPost); // Return the created post
+            }
+            if (filterResult.isDuplicate()) {
+                post.setStatus(Status.REJECTED);
+                String reason = "Duplicate content detected";
+                post.setRejectionReason(reason);
+                filterDetails.put("duplicateCount", filterResult.getDuplicateCount());
+
+                mailService.sendPostRejectedEmailError(
+                        user.getEmail(),
+                        user.getUsername(),
+                        postRequest.getTitle(),
+                        reason,
+                        filterDetails
+                );
+                Post createdPost = postService.registerPost(post);
+                return ResponseEntity.status(HttpStatus.CREATED).body(createdPost); // Return the created post
+            }
             post.setStatus(Status.PENDING);
 
-            // Save the post using the service
             Post createdPost = postService.registerPost(post);
+                mailService.sendPostPendingEmail(post.getUser().getEmail(), postRequest.getTitle(),post.getUser().getUsername());
 
-            mailService.sendPostPendingEmail(post.getUser().getEmail(), postRequest.getTitle(),post.getUser().getUsername());
-                System.out.println(" Post submitted and email sent to "+ post.getUser().getUsername());
             return ResponseEntity.status(HttpStatus.CREATED).body(createdPost); // Return the created post
         } catch (Exception e) {
             e.printStackTrace();
@@ -93,6 +147,7 @@ public class PostController {
                             post.getNumberOfDislikes(),
                             post.getStatus(),
                             post.getUser().getUsername(),
+                            post.getRejectionReason(),d
                             post.getComments().stream().map(comment ->
                                     comment.getId()  // Only return comment ID
                             ).toList(),
@@ -142,6 +197,7 @@ public class PostController {
                     post.getNumberOfDislikes(),
                     post.getStatus(),
                     post.getUser().getUsername(),
+                    post.getRejectionReason(),
                     post.getComments().stream().map(comment ->
                             comment.getId()  // Only return comment ID
                     ).toList(),

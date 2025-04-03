@@ -10,6 +10,7 @@ import tn.esprit.blogmanagement.Entity.Status;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -28,9 +29,9 @@ public class PostDTO {
     private int nbr_dislike;
     private Status status = Status.PENDING;
     private String Username;
+    private String rejectionReason;    // Added for reply IDs
     private List<Long> comments;
     private List<Long> replyIds;    // Added for reply IDs
-
 
 
 }

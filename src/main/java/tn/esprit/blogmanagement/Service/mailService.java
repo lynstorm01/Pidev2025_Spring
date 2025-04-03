@@ -12,6 +12,8 @@ import tn.esprit.blogmanagement.Entity.Comment;
 import tn.esprit.blogmanagement.Entity.User;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 public class mailService {
@@ -73,6 +75,48 @@ public class mailService {
                     "</body></html>";
 
             sendEmail(recipientEmail, subject, emailContent);
+    }
+
+    // Email Service Method
+    public void sendPostRejectedEmailError(String recipientEmail, String userName, String postTitle,
+                                      String rejectionReason, Map<String, Object> errorDetails) {
+        String subject = "❌ Your Post Has Been Rejected";
+
+        // Build the appropriate message based on rejection reason
+        String reasonMessage = "1";
+        String detailsSection = "2";
+
+        if (rejectionReason.contains("Contains inappropriate language")) {
+            Set<String> badWords = (Set<String>) errorDetails.get("badWords");
+            reasonMessage = "because it contains inappropriate language";
+            detailsSection = "<p><strong>Found bad words:</strong> " + String.join(", ", badWords) + "</p>";
+        }
+        else if (rejectionReason.contains("Content not insurance-related")) {
+            reasonMessage = "because it doesn't appear to be related to insurance topics";
+            detailsSection = "<p>Please ensure your post discusses insurance-related subjects like policies, coverage, claims, etc.</p>";
+        }
+        else if (rejectionReason.contains("Duplicate content detected")) {
+            int duplicateCount = (int) errorDetails.get("duplicateCount");
+            reasonMessage = "because similar content already exists";
+            detailsSection = "<p><strong>Found " + duplicateCount + " similar posts</strong> in our system.</p>";
+        }
+        else {
+            reasonMessage = "because it didn't meet our posting guidelines";
+        }
+
+        String emailContent = "<html>" +
+                "<body style='font-family: Arial, sans-serif; color: #333;'>" +
+                "<h2 style='color: #d9534f;'>Hello " + userName + ",</h2>" +
+                "<p>Unfortunately, your post titled <strong>\"" + postTitle + "\"</strong> has been rejected " +
+                reasonMessage + ".</p>" +
+                detailsSection +
+                "<p>We encourage you to review our guidelines and submit a revised version.</p>" +
+                "<p>If you have any questions, please contact our support team.</p>" +
+                "<hr style='border: none; border-top: 1px solid #ddd;'/>" +
+                "<p style='font-size: 12px; color: #777;'>This is an automated message. Please do not reply directly to this email.</p>" +
+                "</body></html>";
+
+        sendEmail(recipientEmail, subject, emailContent);
     }
 
     public void sendMentionNotification(String toEmail, String commentContent,String username) {

@@ -10,6 +10,7 @@ import lombok.*;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Getter
@@ -66,5 +67,11 @@ public class Post {
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments;
+
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
+
+    @Transient
+    private Map<String, Object> filterDetails;
 
 }
