@@ -2,9 +2,9 @@ package tn.esprit.blogmanagement.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import tn.esprit.blogmanagement.DTO.PostDTO;
 import tn.esprit.blogmanagement.Entity.Post;
 import tn.esprit.blogmanagement.Repository.PostRepository;
-import tn.esprit.blogmanagement.Service.IPostService;
 
 import java.util.Date;
 import java.util.List;
@@ -14,10 +14,12 @@ import java.util.Optional;
 public class PostService implements IPostService {
 
     private final PostRepository postRepository;
+    private final ReactionService reactionService;
 
     @Autowired
-    public PostService(PostRepository postRepository) {
+    public PostService(PostRepository postRepository , ReactionService reactionService) {
         this.postRepository = postRepository;
+        this.reactionService = reactionService;
     }
 
     @Override
@@ -52,4 +54,29 @@ public class PostService implements IPostService {
         postRepository.deleteById(id);
     }
 
+    // In PostService.java
+    private PostDTO mapToDTO(Post post) {
+        return PostDTO.builder()
+                .id(post.getId())
+                .title(post.getTitle())
+                .content(post.getContent())
+                .category(post.getCategory())
+                .status(post.getStatus())
+                .createdAt(post.getCreatedAt())
+                .lastUpdatedAt(post.getLastUpdatedAt())
+                // Add other post fields you need
+                .build();
+    }
+
+    public PostDTO getPostWithReactions(Long postId, Long userId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        // Use your existing PostDTO mapping method (not ReactionService's mapToDTO)
+        PostDTO dto = mapToDTO(post); // Assuming you have a mapToDTO method in PostService
+
+        // Set reaction counts and current user reaction
+        dto.setReactionCounts(reactionService.getReactionCounts(postId));
+        return dto;
+    }
 }

@@ -38,33 +38,30 @@ public class CommentController {
 
     // ✅ Create a new comment
     @PostMapping("/add")
-    public ResponseEntity<Comment> createComment(@Valid @RequestBody CommentRequest commentRequest) {
+    public ResponseEntity<CommentDTO> createComment(@Valid @RequestBody CommentRequest commentRequest) {
         try {
-            // Retrieve the user and post by IDs
+            // Keep all your existing code exactly as is until the comment is created
             Optional<User> optionalUser = userService.getUserById(commentRequest.getUserId());
             Optional<Post> optionalPost = postService.getPostById(commentRequest.getPostId());
 
             if (optionalUser.isEmpty() || optionalPost.isEmpty()) {
-                return ResponseEntity.badRequest().body(null); // Return bad request if user or post not found
+                return ResponseEntity.badRequest().body(null);
             }
 
             User user = optionalUser.get();
             Post post = optionalPost.get();
 
-            // Create a new comment entity
             Comment comment = new Comment();
             comment.setContent(commentRequest.getContent());
             comment.setCreatedAt(new Date());
             comment.setUser(user);
             comment.setPost(post);
             comment.setReplies(List.of());
-            comment.setGifUrl(commentRequest.getGifUrl());  // Store GIF URL
+            comment.setGifUrl(commentRequest.getGifUrl());
 
-
-            // Save the comment
             Comment createdComment = commentService.registerComment(comment);
 
-            // ✅ Handle Mentions (NEW)
+            // Keep your mention handling code exactly as is
             List<String> mentionedUsernames = commentService.extractMentions(commentRequest.getContent());
             System.out.println(mentionedUsernames);
             if (!mentionedUsernames.isEmpty()) {
@@ -75,7 +72,21 @@ public class CommentController {
                 );
             }
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(createdComment);
+            // Convert the created Comment entity to CommentDTO
+            CommentDTO commentDTO = new CommentDTO();
+            commentDTO.setId(createdComment.getId());
+            commentDTO.setContent(createdComment.getContent());
+            commentDTO.setCreatedAt(createdComment.getCreatedAt());
+            commentDTO.setLastUpdatedAt(createdComment.getLastUpdatedAt());
+            commentDTO.setIsEdited(createdComment.getIsEdited());
+            commentDTO.setUserId(user.getId());
+            commentDTO.setPostId(post.getId());
+            commentDTO.setUsername(user.getUsername());
+            commentDTO.setPostTitle(post.getTitle());
+            commentDTO.setGifUrl(createdComment.getGifUrl());
+            commentDTO.setRepliesId(List.of()); // Empty list since it's a new comment
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(commentDTO);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

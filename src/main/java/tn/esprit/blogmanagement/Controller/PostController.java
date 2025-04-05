@@ -4,17 +4,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import tn.esprit.blogmanagement.DTO.CommentDTO;
 import tn.esprit.blogmanagement.DTO.PostDTO;
 import tn.esprit.blogmanagement.DTO.PostRequest;
-import tn.esprit.blogmanagement.Entity.Comment;
-import tn.esprit.blogmanagement.Entity.Post;
+import tn.esprit.blogmanagement.Entity.*;
 import jakarta.validation.Valid;
-import tn.esprit.blogmanagement.Entity.Status;
-import tn.esprit.blogmanagement.Entity.User;
 import tn.esprit.blogmanagement.Repository.PostRepository;
 import tn.esprit.blogmanagement.Service.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/Blog")
@@ -147,7 +146,8 @@ public class PostController {
                             post.getNumberOfDislikes(),
                             post.getStatus(),
                             post.getUser().getUsername(),
-                            post.getRejectionReason(),d
+                            post.getReactionCounts(),
+                            post.getRejectionReason(),
                             post.getComments().stream().map(comment ->
                                     comment.getId()  // Only return comment ID
                             ).toList(),
@@ -197,6 +197,7 @@ public class PostController {
                     post.getNumberOfDislikes(),
                     post.getStatus(),
                     post.getUser().getUsername(),
+                    post.getReactionCounts(),
                     post.getRejectionReason(),
                     post.getComments().stream().map(comment ->
                             comment.getId()  // Only return comment ID
@@ -299,7 +300,44 @@ public class PostController {
 
     // Endpoint to get comments for a specific post
     @GetMapping("/{postId}/comments")
-    public List<Comment> getCommentsForPost(@PathVariable Long postId) {
-        return commentService.getCommentsForPost(postId);
+    public ResponseEntity<List<CommentDTO>> getCommentsForPost(@PathVariable Long postId) {
+        List<Comment> comments = commentService.getCommentsForPost(postId);
+
+        List<CommentDTO> commentDTOs = comments.stream()
+                .map(comment -> {
+                    CommentDTO dto = new CommentDTO();
+                    dto.setId(comment.getId());
+                    dto.setContent(comment.getContent());
+                    dto.setCreatedAt(comment.getCreatedAt());
+                    dto.setLastUpdatedAt(comment.getLastUpdatedAt());
+                    dto.setIsEdited(comment.getIsEdited());
+
+                    // Set user information
+                    if (comment.getUser() != null) {
+                        dto.setUserId(comment.getUser().getId());
+                        dto.setUsername(comment.getUser().getUsername());
+                    }
+
+                    // Set post information
+                    if (comment.getPost() != null) {
+                        dto.setPostId(comment.getPost().getId());
+                        dto.setPostTitle(comment.getPost().getTitle());
+                    }
+
+                    // Set GIF URL if exists
+                    dto.setGifUrl(comment.getGifUrl());
+
+                    // Set reply IDs
+                    if (comment.getReplies() != null) {
+                        dto.setRepliesId(comment.getReplies().stream()
+                                .map(Reply::getId)
+                                .collect(Collectors.toList()));
+                    }
+
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(commentDTOs);
     }
 }

@@ -8,9 +8,8 @@ import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Entity
 @Getter
@@ -73,5 +72,25 @@ public class Post {
 
     @Transient
     private Map<String, Object> filterDetails;
+
+
+    // Add to your Post.java entity
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Reaction> reactions = new HashSet<>();
+
+    // Add this transient field for reaction counts
+    @Transient
+    private Map<ReactionType, Long> reactionCounts;
+
+    public Map<ReactionType, Long> getReactionCounts() {
+        if (reactionCounts == null) {
+            reactionCounts = reactions.stream()
+                    .collect(Collectors.groupingBy(
+                            Reaction::getType,
+                            Collectors.counting()
+                    ));
+        }
+        return reactionCounts;
+    }
 
 }

@@ -255,8 +255,42 @@ public class ReplyController {
     }
 
     @GetMapping("/{commentId}/replies")
-    public List<Reply> getRepliesForComment(@PathVariable Long commentId) {
-        return replyService.getRepliesForComment(commentId);  // Get replies for the comment ID
+    public ResponseEntity<List<ReplyDTO>> getRepliesForComment(@PathVariable Long commentId) {
+        List<Reply> replies = replyService.getRepliesForComment(commentId);
+
+        List<ReplyDTO> replyDTOs = replies.stream()
+                .map(reply -> {
+                    ReplyDTO dto = new ReplyDTO();
+                    // Basic reply fields
+                    dto.setId(reply.getId());
+                    dto.setContent(reply.getContent());
+                    dto.setCreatedAt(reply.getCreatedAt());
+                    dto.setLastUpdatedAt(reply.getLastUpdatedAt());
+                    dto.setIsEdited(reply.getIsEdited());
+
+                    // User information
+                    if (reply.getUser() != null) {
+                        dto.setUserId(reply.getUser().getId());
+                        dto.setUsername(reply.getUser().getUsername());
+                    }
+
+                    // Comment information
+                    if (reply.getComment() != null) {
+                        dto.setCommentId(reply.getComment().getId());
+                        dto.setCommentContent(reply.getComment().getContent());
+
+                        // Post information (via comment)
+                        if (reply.getComment().getPost() != null) {
+                            dto.setPostId(reply.getComment().getPost().getId());
+                            dto.setPostTitle(reply.getComment().getPost().getTitle());
+                        }
+                    }
+
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(replyDTOs);
     }
 
 }
