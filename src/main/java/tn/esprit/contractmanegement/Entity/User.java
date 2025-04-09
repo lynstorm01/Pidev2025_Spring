@@ -1,84 +1,111 @@
 package tn.esprit.contractmanegement.Entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.util.StreamUtils;
+import tn.esprit.contractmanegement.enumeration.Role;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.*;
 @Entity
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-
+@Builder
 public class User implements UserDetails {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(unique = true, nullable = false)
-    private String username;
-
+    private Long userId;
+    @NonNull
     private String firstName;
+    @NonNull
     private String lastName;
-    private String password;
-    private Date dateOfRegistration;
+    private Date birthday;
+    @NonNull
+    @Email
     private String email;
-    private String phoneNumber;
-
+    @NonNull
+    private String password;
     @Enumerated(EnumType.STRING)
-    private Role role;  // Enum for better security
-
-    public enum Role {
-        USER, ADMIN
-    }
-
-//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-//    private List<Contract> contracts; // A user can have multiple contracts
-
-    // Implement methods from UserDetails for Spring Security
+    private Role role;
+    private boolean enabled;
+    private long resetToken;
+    private BigDecimal riskScore;
+    @Lob
+    @Column(columnDefinition = "MEDIUMBLOB")
+    private  byte[] profileImage;
+    @Transient
+    private static byte[] defaultProfileImage;
+    private Integer phoneNumber;
     @Override
+    @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(() -> "ROLE_" + role.name());
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return false;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return false;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return false;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return false;
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        System.out.println(role.name());
+        authorities.add(() -> role.name());
+        return authorities;
     }
     @Override
     public String getPassword() {
         return password;
     }
-
     @Override
     public String getUsername() {
-        return username;
+        return email;
+    }
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return enabled;
+    }
+    static {
+        try {
+            defaultProfileImage = StreamUtils.copyToByteArray(
+                    Objects.requireNonNull(User.class.getClassLoader().getResourceAsStream("HelpCenterAssets/profileImage.jpg")));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    @PrePersist
+    public void prePersist() {
+        if (profileImage == null || profileImage.length == 0) {
+            profileImage = defaultProfileImage;
+        }
+    }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return userId != null && userId.equals(user.userId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userId);
     }
 
 
+
+
+
+
 }
+
