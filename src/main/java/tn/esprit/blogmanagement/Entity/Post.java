@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -48,6 +49,15 @@ public class Post {
     // Number of dislikes (default 0)
     @Column(nullable = false)
     private int numberOfDislikes = 0;
+
+    @Column(name = "media_path")
+    private String mediaPath; // Stores file path in server
+
+    @Column(name = "media_type")
+    private String mediaType; // "image" or "video"
+
+    @Transient // Not persisted in DB
+    private MultipartFile mediaFile;
 
     @Enumerated(EnumType.STRING)
     @NotNull(message = "Category is required")

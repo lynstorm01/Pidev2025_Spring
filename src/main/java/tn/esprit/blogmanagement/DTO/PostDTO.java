@@ -1,5 +1,6 @@
 package tn.esprit.blogmanagement.DTO;
 
+import jakarta.persistence.Column;
 import lombok.*;
 import tn.esprit.blogmanagement.DTO.CommentDTO;
 import tn.esprit.blogmanagement.Entity.CategoryType;
@@ -27,6 +28,8 @@ public class PostDTO {
     private Long userId;
     private int nbr_like;
     private int nbr_dislike;
+    private String mediaPath; // Stores file path in server
+    private String mediaType; // "image" or "video"
     private Status status = Status.PENDING;
     private String Username;
     private Map<ReactionType, Long> reactionCounts;

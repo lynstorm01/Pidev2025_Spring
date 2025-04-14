@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.web.multipart.MultipartFile;
 import tn.esprit.blogmanagement.Entity.CategoryType;
 import tn.esprit.blogmanagement.Entity.Comment;
 
@@ -42,5 +43,6 @@ public class PostRequest {
     private Boolean duplicateContent;
     private Integer duplicateCount;
     private List<PostDTO> similarPosts;
+
 
 }

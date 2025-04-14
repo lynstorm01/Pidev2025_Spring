@@ -1,9 +1,15 @@
 package tn.esprit.blogmanagement.Controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import tn.esprit.blogmanagement.DTO.CommentDTO;
 import tn.esprit.blogmanagement.DTO.PostDTO;
 import tn.esprit.blogmanagement.DTO.PostRequest;
@@ -12,6 +18,8 @@ import jakarta.validation.Valid;
 import tn.esprit.blogmanagement.Repository.PostRepository;
 import tn.esprit.blogmanagement.Service.*;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -19,29 +27,36 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/Blog")
 public class PostController {
 
+    @Value("${file.upload-dir}")
+    private String uploadDir;
     private final PostService postService;
     private final UserService userService;
     private final PostRepository postRepository;
     private final tn.esprit.blogmanagement.Service.mailService mailService;
     private final CommentService commentService;
+    private final MediaValidationService mediaValidationService;
+    private final FileStorageService fileStorageService;
 
-    public PostController(PostService postService, UserService userService, PostRepository postRepository, mailService mailService, CommentService commentService) {
+    public PostController(PostService postService, UserService userService, PostRepository postRepository, mailService mailService,FileStorageService fileStorageService,MediaValidationService mediaValidationService, CommentService commentService) {
         this.postService = postService;
         this.userService = userService;
         this.postRepository = postRepository;
         this.mailService = mailService;
         this.commentService = commentService;
+        this.mediaValidationService = mediaValidationService;
+        this.fileStorageService = fileStorageService;
     }
 
     @Autowired
     private ContentFilterService contentFilterService;
 
-    // ✅ Create a new post
-    @PostMapping("/add")
-    public ResponseEntity<Post> createPost(@Valid @RequestBody PostRequest postRequest) {
+    // For JSON-only requests
+    @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Post> createPostJson(@RequestBody PostRequest postRequest) {
         try {
             // Retrieve the user by userId
             Optional<User> optionalUser = userService.getUserById(postRequest.getUserId());
+            // Validate media file first
 
             // Check if the user exists, if not return a bad request response
             if (optionalUser.isEmpty()) {
@@ -129,6 +144,115 @@ public class PostController {
     }
 
 
+    // ✅ Create a new post
+    @PostMapping(value = "/add", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Post> createPost(
+            @RequestPart("postRequest") String postRequestStr,
+            @RequestPart(value = "mediaFile", required = false) MultipartFile mediaFile) {
+        try {
+
+            // Convert JSON string to PostRequest
+            ObjectMapper objectMapper = new ObjectMapper();
+            PostRequest postRequest = objectMapper.readValue(postRequestStr, PostRequest.class);
+
+            // Retrieve the user by userId
+            Optional<User> optionalUser = userService.getUserById(postRequest.getUserId());
+
+            // Validate media file first
+            mediaValidationService.validateMediaFile(mediaFile);
+
+            // Check if the user exists, if not return a bad request response
+            if (optionalUser.isEmpty()) {
+                return ResponseEntity.badRequest().body(null); // Return a bad request if user is not found
+            }
+
+            // Get the User from Optional
+            User user = optionalUser.get();
+
+            ContentFilterService.ContentFilterResult filterResult =
+                    contentFilterService.filterContent(postRequest.getContent(), postRequest.getTitle());
+
+            // Create a new Post entity from the DTO
+            Post post = new Post();
+            post.setTitle(postRequest.getTitle());
+            post.setContent(postRequest.getContent());
+            post.setCategory(postRequest.getCategory());
+            post.setUser(user); // Set the user by userId
+            post.setComments(List.of()); // Ensure comments are set as an empty list if none provided
+
+            // Handle file upload
+            if (mediaFile != null && !mediaFile.isEmpty()) {
+                String filePath = fileStorageService.storeFile(mediaFile);
+                post.setMediaPath(filePath);
+                post.setMediaType(mediaFile.getContentType().startsWith("image") ? "image" : "video");
+            }
+
+
+            // Set filter details (for frontend)
+            Map<String, Object> filterDetails = new HashMap<>();
+            post.setFilterDetails(filterDetails);
+
+            if (filterResult.isContainsBadWords()) {
+                post.setStatus(Status.REJECTED);
+                String reason = "Contains inappropriate language";
+                post.setRejectionReason(reason);
+                filterDetails.put("badWords", filterResult.getBadWords());
+
+                // Send rejection email
+                mailService.sendPostRejectedEmailError(
+                        user.getEmail(),
+                        user.getUsername(),
+                        postRequest.getTitle(),
+                        reason,
+                        filterDetails
+                );
+                Post createdPost = postService.registerPost(post);
+                return ResponseEntity.status(HttpStatus.CREATED).body(createdPost); // Return the created post
+            }
+            if (!filterResult.isInsuranceRelated()) {
+                post.setStatus(Status.REJECTED);
+                String reason = "Content not insurance-related";
+                post.setRejectionReason(reason);
+
+                mailService.sendPostRejectedEmailError(
+                        user.getEmail(),
+                        user.getUsername(),
+                        postRequest.getTitle(),
+                        reason,
+                        new HashMap<>()
+                );
+                Post createdPost = postService.registerPost(post);
+                return ResponseEntity.status(HttpStatus.CREATED).body(createdPost); // Return the created post
+            }
+            if (filterResult.isDuplicate()) {
+                post.setStatus(Status.REJECTED);
+                String reason = "Duplicate content detected";
+                post.setRejectionReason(reason);
+                filterDetails.put("duplicateCount", filterResult.getDuplicateCount());
+
+                mailService.sendPostRejectedEmailError(
+                        user.getEmail(),
+                        user.getUsername(),
+                        postRequest.getTitle(),
+                        reason,
+                        filterDetails
+                );
+                Post createdPost = postService.registerPost(post);
+                return ResponseEntity.status(HttpStatus.CREATED).body(createdPost); // Return the created post
+            }
+            post.setStatus(Status.PENDING);
+
+            Post createdPost = postService.registerPost(post);
+            mailService.sendPostPendingEmail(post.getUser().getEmail(), postRequest.getTitle(),post.getUser().getUsername());
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdPost); // Return the created post
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // Handle internal errors
+        }
+    }
+
+
     // ✅ Get all posts with only userId, commentIds, and replyIds
     @GetMapping("/")
     public ResponseEntity<List<PostDTO>> getAllPosts() {
@@ -144,6 +268,8 @@ public class PostController {
                             post.getUser().getId(),  // Only return userId
                             post.getNumberOfLikes(),
                             post.getNumberOfDislikes(),
+                            post.getMediaPath(),
+                            post.getMediaType(),
                             post.getStatus(),
                             post.getUser().getUsername(),
                             post.getReactionCounts(),
@@ -195,6 +321,8 @@ public class PostController {
                     post.getUser().getId(),  // Only return userId
                     post.getNumberOfLikes(),
                     post.getNumberOfDislikes(),
+                    post.getMediaPath(),
+                    post.getMediaType(),
                     post.getStatus(),
                     post.getUser().getUsername(),
                     post.getReactionCounts(),
@@ -340,4 +468,24 @@ public class PostController {
 
         return ResponseEntity.ok(commentDTOs);
     }
+
+
+@GetMapping("/images/{filename:.+}")
+public ResponseEntity<Resource> serveImage(@PathVariable String filename) {
+    try {
+        Path filePath = Paths.get(uploadDir).resolve(filename).normalize();
+        Resource resource = new UrlResource(filePath.toUri());
+
+        if (resource.exists() || resource.isReadable()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.IMAGE_JPEG) // or detect dynamically
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    } catch (Exception e) {
+        return ResponseEntity.internalServerError().build();
+    }
 }
+}
+
